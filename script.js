@@ -1,75 +1,69 @@
-const STORAGE_KEY = "flashdeck.v3";
+// FlashDeck: Vanilla JS Flashcard Dashboard
+
+const STORAGE_KEY = "flashdeck.v1";
 const CATEGORY_ORDER = ["Linux", "DevOps", "Cloud", "Docker", "Kubernetes"];
 
 const sampleLinuxCards = [
   {
     id: crypto.randomUUID(),
     question: "What does chmod 755 script.sh do?",
-    answer:
-      "Sets permissions to rwx for owner, and r-x for group and others. Owner can read/write/execute, others can read/execute.",
-    tags: ["Linux", "Permissions", "chmod"]
+    answer: "Sets permissions to rwx for owner, and r-x for group and others. Owner can read/write/execute, others can read/execute.",
+    tags: ["Linux", "Permissions", "chmod"],
+    learned: false
   },
   {
     id: crypto.randomUUID(),
     question: "How do you list active services managed by systemd?",
     answer: "Use: systemctl list-units --type=service --state=running",
-    tags: ["Linux", "systemctl", "Services"]
+    tags: ["Linux", "systemctl", "Services"],
+    learned: false
   },
   {
     id: crypto.randomUUID(),
     question: "Which command is used for secure remote access to a Linux server?",
     answer: "ssh user@hostname. You can specify a key with -i path/to/key.",
-    tags: ["Linux", "SSH", "Networking"]
+    tags: ["Linux", "SSH", "Networking"],
+    learned: false
   },
   {
     id: crypto.randomUUID(),
-    question: "What does ip addr show display?",
+    question: "What does the command ip addr show display?",
     answer: "It displays network interfaces and assigned IP addresses on the system.",
-    tags: ["Linux", "Networking", "IP"]
+    tags: ["Linux", "Networking", "IP"],
+    learned: false
   },
   {
     id: crypto.randomUUID(),
     question: "What does #!/bin/bash at the top of a script mean?",
-    answer: "It is a shebang line that tells the system to execute the script with Bash.",
-    tags: ["Linux", "Bash", "Scripting"]
+    answer: "It's a shebang line telling the system to run the script using the Bash interpreter.",
+    tags: ["Linux", "Bash", "Scripting"],
+    learned: false
   }
 ];
 
 const state = {
   data: null,
   activeCategory: "Linux",
-  view: "edit",
   search: "",
   selectedTags: new Set(),
+  studyMode: false,
   viewedInSession: new Set(),
-  study: {
-    category: "Linux",
-    ids: [],
-    index: 0
-  }
+  currentStudyCardId: null
 };
 
 const els = {
-  appShell: document.getElementById("appShell"),
-  sidebar: document.getElementById("sidebar"),
-  sidebarToggle: document.getElementById("sidebarToggle"),
-  toggleCategories: document.getElementById("toggleCategories"),
   categoryList: document.getElementById("categoryList"),
+  toggleCategories: document.getElementById("toggleCategories"),
   activeCategoryTitle: document.getElementById("activeCategoryTitle"),
-  topSubtitle: document.getElementById("topSubtitle"),
   totalCardsStat: document.getElementById("totalCardsStat"),
   categoryCardsStat: document.getElementById("categoryCardsStat"),
   viewedCardsStat: document.getElementById("viewedCardsStat"),
+  learnedRatio: document.getElementById("learnedRatio"),
+  learnedProgress: document.getElementById("learnedProgress"),
   tagStats: document.getElementById("tagStats"),
-  viewEditBtn: document.getElementById("viewEditBtn"),
-  viewStudyBtn: document.getElementById("viewStudyBtn"),
-  editView: document.getElementById("editView"),
-  studyView: document.getElementById("studyView"),
-  studyCategoryButtons: document.getElementById("studyCategoryButtons"),
-  prevStudyCard: document.getElementById("prevStudyCard"),
+  studyModeToggle: document.getElementById("studyModeToggle"),
   nextStudyCard: document.getElementById("nextStudyCard"),
-  shuffleStudyCards: document.getElementById("shuffleStudyCards"),
-  studyCounter: document.getElementById("studyCounter"),
+  studyPanel: document.getElementById("studyPanel"),
   studyCardWrap: document.getElementById("studyCardWrap"),
   searchInput: document.getElementById("searchInput"),
   clearFilters: document.getElementById("clearFilters"),
@@ -80,7 +74,9 @@ const els = {
   cardForm: document.getElementById("cardForm"),
   questionInput: document.getElementById("questionInput"),
   answerInput: document.getElementById("answerInput"),
-  tagsInput: document.getElementById("tagsInput")
+  tagsInput: document.getElementById("tagsInput"),
+  sidebar: document.getElementById("sidebar"),
+  sidebarToggle: document.getElementById("sidebarToggle")
 };
 
 function storageLoad() {
@@ -119,93 +115,64 @@ function normalizeTags(tagString) {
 
 function hashColor(text) {
   let hash = 0;
-  for (let i = 0; i < text.length; i += 1) hash = text.charCodeAt(i) + ((hash << 5) - hash);
-  return `hsl(${Math.abs(hash) % 360}, 80%, 74%)`;
-}
-
-function getCategoryCards(category) {
-  return state.data.categories[category] || [];
+  for (let i = 0; i < text.length; i += 1) {
+    hash = text.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 78%, 72%)`;
 }
 
 function getCurrentCards() {
-  return getCategoryCards(state.activeCategory);
-}
-
-function getStudyPool() {
-  if (state.study.category === "ALL") {
-    return CATEGORY_ORDER.flatMap((category) => getCategoryCards(category));
-  }
-  return getCategoryCards(state.study.category);
+  return state.data.categories[state.activeCategory] || [];
 }
 
 function filteredCards() {
   const search = state.search.toLowerCase();
   return getCurrentCards().filter((card) => {
-    const matchesSearch =
+    const matchesText =
       !search ||
       card.question.toLowerCase().includes(search) ||
       card.answer.toLowerCase().includes(search);
+
     const matchesTags = [...state.selectedTags].every((tag) => card.tags.includes(tag));
-    return matchesSearch && matchesTags;
+    return matchesText && matchesTags;
   });
 }
 
-function ensureStudyDeck() {
-  const pool = getStudyPool();
-  const stillValid = state.study.ids.filter((id) => pool.some((card) => card.id === id));
-  const missing = pool.filter((card) => !stillValid.includes(card.id)).map((card) => card.id);
-  state.study.ids = [...stillValid, ...missing];
-
-  if (!state.study.ids.length) state.study.index = 0;
-  else if (state.study.index >= state.study.ids.length) state.study.index = state.study.ids.length - 1;
-}
-
-function createTagPill(tag, clickable = true) {
-  const el = clickable ? document.createElement("button") : document.createElement("span");
-  el.className = "tag-pill";
-  el.textContent = tag;
-  el.style.background = hashColor(tag);
-
-  if (clickable) {
-    el.addEventListener("click", (event) => {
+function createTagPill(tag, interactive = true) {
+  const tagEl = document.createElement("button");
+  tagEl.className = "tag-pill";
+  tagEl.textContent = tag;
+  tagEl.style.background = hashColor(tag);
+  if (!interactive) {
+    tagEl.disabled = true;
+    tagEl.style.cursor = "default";
+  } else {
+    tagEl.addEventListener("click", (event) => {
       event.stopPropagation();
       if (state.selectedTags.has(tag)) state.selectedTags.delete(tag);
       else state.selectedTags.add(tag);
       render();
     });
   }
-  return el;
+  return tagEl;
 }
 
-function renderCategoryList() {
+function renderCategories() {
   els.categoryList.innerHTML = "";
   CATEGORY_ORDER.forEach((category) => {
+    const count = state.data.categories[category].length;
     const button = document.createElement("button");
     button.className = `category-btn ${state.activeCategory === category ? "active" : ""}`;
-    button.innerHTML = `<span>${category}</span><strong>${getCategoryCards(category).length}</strong>`;
+    button.innerHTML = `<span>${category}</span><strong>${count}</strong>`;
     button.addEventListener("click", () => {
       state.activeCategory = category;
+      state.currentStudyCardId = null;
+      state.selectedTags.clear();
       render();
       if (window.innerWidth <= 980) els.sidebar.classList.remove("open");
     });
     els.categoryList.appendChild(button);
-  });
-}
-
-function renderStudyCategoryButtons() {
-  els.studyCategoryButtons.innerHTML = "";
-  ["ALL", ...CATEGORY_ORDER].forEach((category) => {
-    const button = document.createElement("button");
-    button.className = `pill-btn ${state.study.category === category ? "active-view" : ""}`;
-    button.textContent = category === "ALL" ? "All" : category;
-    button.addEventListener("click", () => {
-      state.study.category = category;
-      state.study.ids = [];
-      state.study.index = 0;
-      ensureStudyDeck();
-      renderStudyView();
-    });
-    els.studyCategoryButtons.appendChild(button);
   });
 }
 
@@ -232,28 +199,32 @@ function renderFilters() {
 }
 
 function renderStats() {
-  const allCards = CATEGORY_ORDER.flatMap((category) => getCategoryCards(category));
+  const allCards = CATEGORY_ORDER.flatMap((category) => state.data.categories[category]);
   const activeCards = getCurrentCards();
-  const tagCounts = {};
+  const learnedCount = activeCards.filter((card) => card.learned).length;
+  const ratio = activeCards.length ? Math.round((learnedCount / activeCards.length) * 100) : 0;
 
+  els.totalCardsStat.textContent = String(allCards.length);
+  els.categoryCardsStat.textContent = String(activeCards.length);
+  els.viewedCardsStat.textContent = String(state.viewedInSession.size);
+  els.learnedRatio.textContent = `${ratio}%`;
+  els.learnedProgress.style.width = `${ratio}%`;
+
+  const tagCounts = {};
   activeCards.forEach((card) => {
     card.tags.forEach((tag) => {
       tagCounts[tag] = (tagCounts[tag] || 0) + 1;
     });
   });
 
-  els.totalCardsStat.textContent = String(allCards.length);
-  els.categoryCardsStat.textContent = String(activeCards.length);
-  els.viewedCardsStat.textContent = String(state.viewedInSession.size);
-
   els.tagStats.innerHTML = "";
   Object.entries(tagCounts)
     .sort((a, b) => b[1] - a[1])
     .forEach(([tag, count]) => {
-      const pill = document.createElement("span");
-      pill.className = "filter-pill";
-      pill.textContent = `${tag}: ${count}`;
-      els.tagStats.appendChild(pill);
+      const chip = document.createElement("span");
+      chip.className = "filter-pill";
+      chip.textContent = `${tag}: ${count}`;
+      els.tagStats.appendChild(chip);
     });
 }
 
@@ -264,8 +235,8 @@ function enableInlineEdit(cardEl, card) {
     <label>Answer<textarea class="edit-field edit-answer">${card.answer}</textarea></label>
     <label>Tags<input class="edit-field edit-tags" value="${card.tags.join(", ")}" /></label>
     <div class="card-actions">
-      <button class="btn btn-compact save-edit">Save</button>
-      <button class="btn btn-ghost btn-compact cancel-edit">Cancel</button>
+      <button class="btn save-edit">Save</button>
+      <button class="btn btn-ghost cancel-edit">Cancel</button>
     </div>
   `;
 
@@ -280,7 +251,6 @@ function enableInlineEdit(cardEl, card) {
     card.answer = a;
     card.tags = tags;
     storageSave();
-    ensureStudyDeck();
     render();
   });
 
@@ -290,126 +260,121 @@ function enableInlineEdit(cardEl, card) {
   });
 }
 
-function createCardElement(card, options = {}) {
-  const { readOnly = false, large = false } = options;
+function createCardElement(card) {
   const node = els.cardTemplate.content.firstElementChild.cloneNode(true);
-
-  if (large) node.classList.add("study-large");
-
   const question = node.querySelector(".card-question");
   const answer = node.querySelector(".card-answer");
-  const frontTags = node.querySelector(".card-front .tag-row");
-  const backTags = node.querySelector(".card-back .tag-row");
+  const tagRow = node.querySelector(".tag-row");
   const deleteBtn = node.querySelector(".delete-btn");
   const editBtn = node.querySelector(".edit-btn");
+  const learnedCheckbox = node.querySelector(".learned-checkbox");
 
   question.textContent = card.question;
   answer.textContent = card.answer;
+  learnedCheckbox.checked = !!card.learned;
 
-  card.tags.forEach((tag) => {
-    frontTags.appendChild(createTagPill(tag, !readOnly));
-    backTags.appendChild(createTagPill(tag, false));
+  learnedCheckbox.addEventListener("click", (event) => {
+    event.stopPropagation();
+    card.learned = learnedCheckbox.checked;
+    storageSave();
+    renderStats();
   });
 
-  if (readOnly) {
-    deleteBtn.remove();
-    editBtn.remove();
-  } else {
-    deleteBtn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const cards = getCurrentCards();
-      const idx = cards.findIndex((c) => c.id === card.id);
-      if (idx >= 0) cards.splice(idx, 1);
-      storageSave();
-      ensureStudyDeck();
-      render();
-    });
+  card.tags.forEach((tag) => tagRow.appendChild(createTagPill(tag, true)));
 
-    editBtn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      enableInlineEdit(node, card);
-    });
-  }
+  deleteBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const cards = getCurrentCards();
+    const idx = cards.findIndex((c) => c.id === card.id);
+    if (idx >= 0) cards.splice(idx, 1);
+    storageSave();
+    render();
+  });
 
-  node.addEventListener("click", () => node.classList.toggle("flipped"));
+  editBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    enableInlineEdit(node, card);
+  });
+
+  node.addEventListener("click", () => {
+    node.classList.toggle("flipped");
+  });
+
   return node;
 }
 
 function renderCardGrid() {
   const cards = filteredCards();
   els.cardsGrid.innerHTML = "";
-  cards.forEach((card) => els.cardsGrid.appendChild(createCardElement(card)));
+  cards.forEach((card) => {
+    els.cardsGrid.appendChild(createCardElement(card));
+  });
   els.emptyState.classList.toggle("hidden", cards.length !== 0);
 }
 
-function getStudyCard() {
-  if (!state.study.ids.length) return null;
-  const id = state.study.ids[state.study.index];
-  return getStudyPool().find((card) => card.id === id) || null;
+function randomCardFromFiltered() {
+  const cards = filteredCards();
+  if (!cards.length) return null;
+  const pool = cards.filter((card) => card.id !== state.currentStudyCardId);
+  const targetPool = pool.length ? pool : cards;
+  return targetPool[Math.floor(Math.random() * targetPool.length)];
 }
 
-function renderStudyView() {
-  ensureStudyDeck();
-  const card = getStudyCard();
-  els.studyCardWrap.innerHTML = "";
+function renderStudyMode() {
+  els.studyPanel.classList.toggle("hidden", !state.studyMode);
+  els.studyModeToggle.textContent = `Study Mode: ${state.studyMode ? "On" : "Off"}`;
 
+  if (!state.studyMode) return;
+
+  let card = filteredCards().find((c) => c.id === state.currentStudyCardId);
+  if (!card) {
+    card = randomCardFromFiltered();
+    state.currentStudyCardId = card?.id || null;
+  }
+
+  els.studyCardWrap.innerHTML = "";
   if (!card) {
     const empty = document.createElement("p");
+    empty.textContent = "No card available for study mode with current filters.";
     empty.className = "empty";
-    empty.textContent = "No cards available for this category yet.";
     els.studyCardWrap.appendChild(empty);
-    els.studyCounter.textContent = "0 / 0";
     return;
   }
 
   state.viewedInSession.add(card.id);
   els.viewedCardsStat.textContent = String(state.viewedInSession.size);
-  els.studyCounter.textContent = `${state.study.index + 1} / ${state.study.ids.length}`;
-  els.studyCardWrap.appendChild(createCardElement(card, { readOnly: true, large: true }));
-}
-
-function renderViewMode() {
-  const isEdit = state.view === "edit";
-  els.editView.classList.toggle("hidden", !isEdit);
-  els.studyView.classList.toggle("hidden", isEdit);
-  els.sidebar.classList.toggle("hidden-study", !isEdit);
-  els.appShell.classList.toggle("study-layout", !isEdit);
-  els.viewEditBtn.classList.toggle("active-view", isEdit);
-  els.viewStudyBtn.classList.toggle("active-view", !isEdit);
-  els.activeCategoryTitle.textContent = isEdit ? state.activeCategory : "Study Mode";
-  els.topSubtitle.textContent = isEdit ? "Modern flashcard dashboard" : "Focus mode";
+  const node = createCardElement(card);
+  node.style.maxWidth = "360px";
+  els.studyCardWrap.appendChild(node);
 }
 
 function render() {
-  renderCategoryList();
-  renderStudyCategoryButtons();
+  els.activeCategoryTitle.textContent = state.activeCategory;
+  renderCategories();
   renderFilters();
   renderCardGrid();
-  renderStudyView();
-  renderViewMode();
+  renderStudyMode();
   renderStats();
-}
-
-function shuffleStudyDeck() {
-  ensureStudyDeck();
-  for (let i = state.study.ids.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [state.study.ids[i], state.study.ids[j]] = [state.study.ids[j], state.study.ids[i]];
-  }
-  state.study.index = 0;
 }
 
 function bindEvents() {
   els.cardForm.addEventListener("submit", (event) => {
     event.preventDefault();
+
     const question = els.questionInput.value.trim();
     const answer = els.answerInput.value.trim();
     const tags = normalizeTags(els.tagsInput.value);
     if (!question || !answer) return;
 
-    getCurrentCards().unshift({ id: crypto.randomUUID(), question, answer, tags });
+    getCurrentCards().unshift({
+      id: crypto.randomUUID(),
+      question,
+      answer,
+      tags,
+      learned: false
+    });
+
     storageSave();
-    ensureStudyDeck();
     els.cardForm.reset();
     render();
   });
@@ -426,34 +391,16 @@ function bindEvents() {
     render();
   });
 
-  els.viewEditBtn.addEventListener("click", () => {
-    state.view = "edit";
-    render();
-  });
-
-  els.viewStudyBtn.addEventListener("click", () => {
-    state.view = "study";
-    ensureStudyDeck();
+  els.studyModeToggle.addEventListener("click", () => {
+    state.studyMode = !state.studyMode;
+    state.currentStudyCardId = null;
     render();
   });
 
   els.nextStudyCard.addEventListener("click", () => {
-    ensureStudyDeck();
-    if (!state.study.ids.length) return;
-    state.study.index = (state.study.index + 1) % state.study.ids.length;
-    renderStudyView();
-  });
-
-  els.prevStudyCard.addEventListener("click", () => {
-    ensureStudyDeck();
-    if (!state.study.ids.length) return;
-    state.study.index = (state.study.index - 1 + state.study.ids.length) % state.study.ids.length;
-    renderStudyView();
-  });
-
-  els.shuffleStudyCards.addEventListener("click", () => {
-    shuffleStudyDeck();
-    renderStudyView();
+    const card = randomCardFromFiltered();
+    state.currentStudyCardId = card?.id || null;
+    renderStudyMode();
   });
 
   els.toggleCategories.addEventListener("click", () => {
@@ -474,7 +421,6 @@ function bindEvents() {
 
 function init() {
   state.data = storageLoad();
-  ensureStudyDeck();
   bindEvents();
   render();
 }
