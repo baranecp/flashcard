@@ -13,11 +13,11 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <div class="app-shell" id="appShell">
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
           <h1>FlashDeck</h1>
-          <p>Study smarter</p>
+          <p>Linux now, DevOps + Cloud next</p>
         </div>
 
         <section class="category-panel">
@@ -44,97 +44,97 @@
               <strong id="viewedCardsStat">0</strong>
             </article>
           </div>
-
-          <div class="progress-wrap">
-            <div class="progress-meta">
-              <span>Learned Progress</span>
-              <span id="learnedRatio">0%</span>
-            </div>
-            <div class="progress-track">
-              <div id="learnedProgress" class="progress-bar"></div>
-            </div>
-          </div>
-
           <div id="tagStats" class="tag-stats"></div>
         </section>
       </aside>
 
-      <div class="main-area">
-        <header class="topbar">
+      <main class="main-area">
+        <header class="topbar" id="topbar">
           <button id="sidebarToggle" class="icon-btn mobile-only" aria-label="Open sidebar">☰</button>
           <div class="title-wrap">
             <h2 id="activeCategoryTitle">Linux</h2>
-            <p>Flashcard dashboard</p>
+            <p id="topSubtitle">Modern flashcard dashboard</p>
           </div>
           <div class="actions">
-            <button id="studyModeToggle" class="btn btn-secondary">Study Mode: Off</button>
-            <button id="clearFilters" class="btn btn-ghost">Clear Filters</button>
+            <button id="viewEditBtn" class="btn btn-secondary active-view">Edit Mode</button>
+            <button id="viewStudyBtn" class="btn btn-secondary">Study Mode</button>
           </div>
         </header>
 
-        <section class="toolbar">
-          <label class="field">
-            <span>Search</span>
-            <input type="search" id="searchInput" placeholder="Search question or answer..." />
-          </label>
-          <div class="active-filters">
-            <span>Tag Filters:</span>
-            <div id="activeTagFilters" class="filter-pill-wrap"></div>
-          </div>
+        <section id="editView" class="view-panel">
+          <section class="toolbar">
+            <label class="field">
+              <span>Search</span>
+              <input type="search" id="searchInput" placeholder="Search question or answer..." />
+            </label>
+            <div class="active-filters">
+              <span>Tag Filters:</span>
+              <div id="activeTagFilters" class="filter-pill-wrap"></div>
+            </div>
+            <button id="clearFilters" class="btn btn-ghost btn-compact">Clear Filters</button>
+          </section>
+
+          <section class="form-section">
+            <h3>Add Flashcard</h3>
+            <form id="cardForm" class="card-form">
+              <label>
+                Question
+                <textarea id="questionInput" required placeholder="Enter a Linux question"></textarea>
+              </label>
+              <label>
+                Answer
+                <textarea id="answerInput" required placeholder="Enter the answer"></textarea>
+              </label>
+              <label>
+                Tags (comma-separated)
+                <input id="tagsInput" type="text" placeholder="Linux, Bash, Networking" />
+              </label>
+              <button type="submit" class="btn btn-compact add-card-btn">Add Card</button>
+            </form>
+          </section>
+
+          <section>
+            <div id="cardsGrid" class="cards-grid"></div>
+            <p id="emptyState" class="empty hidden">No cards match current filters.</p>
+          </section>
         </section>
 
-        <section id="studyPanel" class="study-panel hidden" aria-live="polite">
-          <div class="study-header">
-            <h3>Study Mode</h3>
-            <button id="nextStudyCard" class="btn">Next Random</button>
-          </div>
-          <div id="studyCardWrap" class="study-card-wrap"></div>
-        </section>
+        <section id="studyView" class="view-panel hidden" aria-live="polite">
+          <section class="study-category-bar">
+            <span>Study Categories:</span>
+            <div id="studyCategoryButtons" class="pill-buttons"></div>
+          </section>
 
-        <section class="form-section">
-          <h3>Add Flashcard</h3>
-          <form id="cardForm" class="card-form">
-            <label>
-              Question
-              <textarea id="questionInput" required placeholder="Enter a Linux question"></textarea>
-            </label>
-            <label>
-              Answer
-              <textarea id="answerInput" required placeholder="Enter the answer"></textarea>
-            </label>
-            <label>
-              Tags (comma-separated)
-              <input id="tagsInput" type="text" placeholder="Linux, Bash, Networking" />
-            </label>
-            <button type="submit" class="btn btn-compact add-card-btn">Add Card</button>
-          </form>
+          <section class="study-stage">
+            <div id="studyCardWrap" class="study-card-wrap"></div>
+            <div class="study-footer-bar">
+              <span id="studyCounter">0 / 0</span>
+              <div class="study-nav">
+                <button id="prevStudyCard" class="btn btn-ghost btn-compact">Previous</button>
+                <button id="shuffleStudyCards" class="btn btn-ghost btn-compact">Shuffle</button>
+                <button id="nextStudyCard" class="btn btn-compact">Next</button>
+              </div>
+            </div>
+          </section>
         </section>
-
-        <section>
-          <div id="cardsGrid" class="cards-grid"></div>
-          <p id="emptyState" class="empty hidden">No cards match current filters.</p>
-        </section>
-      </div>
+      </main>
     </div>
 
     <template id="cardTemplate">
       <article class="flashcard fade-in">
         <div class="flashcard-inner">
           <div class="card-face card-front">
-            <div class="card-head">
+            <div class="tag-row card-tags-top"></div>
+            <div class="card-question-wrap">
               <h4 class="card-question"></h4>
-              <label class="learned-toggle">
-                <input type="checkbox" class="learned-checkbox" />
-                Learned
-              </label>
             </div>
-            <div class="tag-row"></div>
             <div class="card-actions">
               <button class="btn btn-ghost edit-btn">Edit</button>
               <button class="btn btn-danger delete-btn">Delete</button>
             </div>
           </div>
           <div class="card-face card-back">
+            <div class="tag-row card-tags-top"></div>
             <h5>Answer</h5>
             <p class="card-answer"></p>
           </div>
