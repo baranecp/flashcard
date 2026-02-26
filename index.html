@@ -89,6 +89,13 @@
                 Tags (comma-separated)
                 <input id="tagsInput" type="text" placeholder="Linux, Bash, Networking" />
               </label>
+              <label>
+                Card Language
+                <select id="cardLanguageInput">
+                  <option value="en">English</option>
+                  <option value="sk">Slovak</option>
+                </select>
+              </label>
               <button type="submit" class="btn btn-compact add-card-btn">Add Card</button>
             </form>
           </section>
@@ -103,10 +110,14 @@
           <section class="study-category-bar">
             <span>Study Categories:</span>
             <div id="studyCategoryButtons" class="pill-buttons"></div>
+            <span class="sep-dot">•</span>
+            <span>Study Language:</span>
+            <div id="studyLanguageButtons" class="pill-buttons"></div>
           </section>
 
           <section class="study-stage">
             <div id="studyCardWrap" class="study-card-wrap"></div>
+            <div id="translationInfo" class="translation-info"></div>
             <div class="study-footer-bar">
               <span id="studyCounter">0 / 0</span>
               <div class="study-nav">

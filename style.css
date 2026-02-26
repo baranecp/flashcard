@@ -488,3 +488,25 @@ h1, h2, h3, h4, h5, p { margin: 0; }
 
   .study-large .card-question { font-size: 1.5rem; }
 }
+
+
+.sep-dot {
+  color: var(--muted);
+  margin: 0 0.2rem;
+}
+
+.translation-info {
+  min-height: 1.1rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+#cardLanguageInput {
+  width: 100%;
+  background: rgba(7, 13, 27, 0.72);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.17);
+  border-radius: 12px;
+  padding: 0.72rem;
+  font: inherit;
+}
