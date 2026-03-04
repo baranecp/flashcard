@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlashDeck Study</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="study-shell">
+      <header class="study-header">
+        <div>
+          <h1>FlashDeck</h1>
+          <p>Focused flashcard study + text import</p>
+        </div>
+        <div class="pill-row" id="languageButtons"></div>
+      </header>
+
+      <section class="import-panel">
+        <div class="import-instructions">
+          <h2>Import Questions from Text File</h2>
+          <p>Use format: <code>Q: ...</code> and <code>A: ...</code> (blank line optional between cards).</p>
+          <p>Example:</p>
+          <pre>Q: What does chmod 755 do?
+A: Owner rwx, group r-x, others r-x.</pre>
+        </div>
+
+        <div class="import-actions">
+          <input id="fileInput" type="file" accept=".txt,.md,.text" />
+          <button id="importFileBtn" class="btn">Import File</button>
+          <button id="clearDeckBtn" class="btn btn-ghost">Clear Deck</button>
+        </div>
+
+        <p id="importStatus" class="status-line"></p>
+      </section>
+
+      <section class="study-stage">
+        <div id="studyCardWrap" class="study-card-wrap"></div>
+        <div id="translationInfo" class="status-line"></div>
+
+        <div class="study-footer-bar">
+          <span id="studyCounter">0 / 0</span>
+          <div class="study-nav">
+            <button id="prevBtn" class="btn btn-ghost">Previous</button>
+            <button id="shuffleBtn" class="btn btn-ghost">Shuffle</button>
+            <button id="nextBtn" class="btn">Next</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <template id="cardTemplate">
+      <article class="flashcard fade-in">
+        <div class="flashcard-inner">
+          <div class="card-face card-front">
+            <div class="card-top">
+              <span class="lang-chip lang-chip-front"></span>
+            </div>
+            <div class="card-question-wrap">
+              <h3 class="card-question"></h3>
+            </div>
+          </div>
+
+          <div class="card-face card-back">
+            <div class="card-top">
+              <span class="lang-chip lang-chip-back"></span>
+            </div>
+            <h4>Answer</h4>
+            <p class="card-answer"></p>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,252 @@
+:root {
+  --bg: #070b16;
+  --panel: rgba(20, 29, 53, 0.74);
+  --panel-border: rgba(255, 255, 255, 0.14);
+  --text: #ebf1ff;
+  --muted: #9cafd8;
+  --accent: #5ad7ff;
+  --accent-2: #9a6bff;
+  --accent-3: #38e8b8;
+  --radius: 18px;
+  --shadow: 0 20px 45px rgba(0, 0, 0, 0.44);
+  --transition: 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 10% 10%, rgba(90, 215, 255, 0.3), transparent 35%),
+    radial-gradient(circle at 90% 0%, rgba(154, 107, 255, 0.3), transparent 42%),
+    linear-gradient(160deg, #0b1022 0%, #090f1f 45%, #070b16 100%);
+}
+
+h1, h2, h3, h4, p, pre { margin: 0; }
+
+.study-shell {
+  width: min(1040px, 96vw);
+  margin: 1.2rem auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.study-header,
+.import-panel,
+.study-stage,
+.flashcard {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.study-header,
+.import-panel,
+.study-stage { padding: 1rem; }
+
+.study-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.study-header h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: linear-gradient(115deg, var(--accent), var(--accent-2), var(--accent-3));
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.study-header p,
+.status-line {
+  margin-top: 0.25rem;
+  color: var(--muted);
+}
+
+.pill-row,
+.study-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.import-panel {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.import-instructions {
+  display: grid;
+  gap: 0.42rem;
+}
+
+pre {
+  background: rgba(6, 12, 25, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.65rem;
+  overflow: auto;
+  font-size: 0.86rem;
+}
+
+.import-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn,
+.pill-btn {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.45rem 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+  background: linear-gradient(115deg, var(--accent), var(--accent-2));
+  color: #071122;
+}
+
+.pill-btn,
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.pill-btn.active {
+  border-color: rgba(90, 215, 255, 0.9);
+  background: linear-gradient(120deg, rgba(90, 215, 255, 0.35), rgba(154, 107, 255, 0.28));
+}
+
+.btn:hover,
+.pill-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(90, 215, 255, 0.25);
+}
+
+.study-stage {
+  display: grid;
+  gap: 0.8rem;
+  justify-items: center;
+}
+
+.study-card-wrap {
+  width: min(920px, 100%);
+}
+
+.flashcard {
+  min-height: 480px;
+  perspective: 1300px;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+  background-image: linear-gradient(145deg, rgba(40, 57, 99, 0.95), rgba(22, 33, 59, 0.95));
+}
+
+.flashcard:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 25px 48px rgba(27, 45, 87, 0.58);
+}
+
+.flashcard-inner {
+  position: relative;
+  height: 100%;
+  min-height: 480px;
+  transform-style: preserve-3d;
+  transition: transform 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  backface-visibility: hidden;
+  border-radius: var(--radius);
+  background:
+    linear-gradient(160deg, rgba(75, 125, 255, 0.26), rgba(154, 107, 255, 0.16), rgba(56, 232, 184, 0.14)),
+    linear-gradient(155deg, rgba(26, 39, 72, 0.8), rgba(16, 24, 44, 0.85));
+}
+
+.card-back { transform: rotateY(180deg); }
+
+.card-top {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.lang-chip {
+  border-radius: 999px;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.73rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.card-question-wrap {
+  margin: auto 0;
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+
+.card-question {
+  font-size: 2rem;
+  line-height: 1.35;
+}
+
+.card-back h4 {
+  margin-top: 0.8rem;
+  color: var(--muted);
+}
+
+.card-answer {
+  margin-top: 0.65rem;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.study-footer-bar {
+  width: min(920px, 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.65rem;
+  background: linear-gradient(130deg, rgba(90, 215, 255, 0.11), rgba(154, 107, 255, 0.14));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
+}
+
+.fade-in { animation: fadeInUp 380ms ease both; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 760px) {
+  .study-shell { width: 94vw; }
+  .study-header { flex-direction: column; align-items: flex-start; }
+  .import-actions { flex-direction: column; align-items: stretch; }
+  .study-footer-bar {
+    border-radius: 16px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .study-nav .btn { flex: 1; }
+  .flashcard,
+  .flashcard-inner { min-height: 370px; }
+  .card-question { font-size: 1.45rem; }
+}
